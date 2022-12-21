@@ -1,0 +1,482 @@
+# Inicio do Projeto
+Então, iniciando o projeto, após ir no site https://start.spring.io/, 
+adicionar as dependências, o nome do projeto e afins. Agora vamos iniciar
+nosso projeto adicionando uma `Controller` dentro da pasta:
+
+``` Folder
+src
+    main
+        java
+            med
+                voll
+                    api
+                        controller
+                        HelloController.java
+```
+Neste arquivo `HelloController.java` é uma classe chamada
+`HelloController`, onde precisamos indicar para o projeto
+que isso é uma controladora.
+
+# Informando que é uma controladora e mapeando requisição
+Para comunicarmos o Spring MVC que é uma classe controller, acima dela incluiremos a anotação `@Controller`. Mas como trabalharemos com uma aplicação diferente da aplicação web tradicional, e sim com uma API Rest, a notação será diferente: `@RestController`.
+
+Outra anotação que incluiremmos é a `@ResquestMapping`. Isso informará qual a URL que esse controller vai responder, que será `/hello`. Assim, ao chegar uma requisição para `localhost:8080` vai cair neste controller.
+
+``` Java
+@RestController
+@RequestMapping("/hello")
+public class HelloController {
+
+}
+```
+
+Agora vamos criar um método dentro dessa classe:
+
+```java
+public String olaMundo() {
+    return "Hello World!";
+}
+```
+
+Com o método criado, precisamos informar para o Spring que essa classe é não só uma controller, mas também que quando chegar a requisição mapeada no `RequestMapping("/hello")` e ela for do tipo `get`, será chamado esse método `olaMundo()`.
+
+Para informar isso, colocamos em cima do método a anotação `@GetMapping`.
+
+```java
+@GetMapping
+public String olaMundo() {
+    return "Hello World!";
+}
+```
+
+# Como disparar requisições para nossa API
+Agora vamos entender como faremos para disparar requisições, como `Get`,`Post`, `Put`, `Delete`.
+
+No programa `Insominia`, podemos configurar uma parte para simular, como se fosse em uma aplicação Front-End toda a parte comunicação com o nosso Back-End, como se fosse os testes do nosso Back-End.
+
+![](Image/Insomnia.png)
+
+No botão `Create`:
+![](Image/Insomnia2.png)
+
+Vamos em `Request Collection`, e depois colocando o nome da nossa Request, vamos para a tela:
+![](Image/Insomnia3.png)
+
+Agora podemos ir no `+` e clicarmos em `HTTP Request`, ou podemos usar o comando `Ctrl + n`.
+
+![](Image/Insomnia4.png)
+
+Onde podemos ao lado esquerdo renomear o nome da requisição, clicando 2 vezes em `New Request`, e podemos ao lado direito colocar a url da nossa querisição, além de podemos trocar o tipo de requisição, como se trocarmos para `Post`:
+
+![](Image/Insomnia5.png)
+
+No nosso caso eu quero criar médicos, então o meu precisa ser do tipo `Post`, com a URL `http://localhost:8080/medicos`, pois como estou usando o Spring Boot, a aplicação está rodando localhost, na porta `8080`
+
+# Fazendo mais uma controller
+Agora que temos um programa pra simular nosso Front-End, temos que receber essas requisições e simular.
+
+Para isso vamos criar a controller de médicos
+
+``` Java
+public class MedicoController {
+
+}
+```
+
+Agora vamos criar o método para realizar o cadastro do nosso médico.
+
+``` Java
+public class MedicoController {
+
+    public void cadastrar(String json) {
+        System.out.println(json);
+    }
+}
+```
+
+Criamos o método e a controller. Mas precisamos usar as anotações para fazer alguns mapeamentos, como o mapeamento da `Controller`, do `Request`, e do Post do nosso método:
+
+``` Java
+@RestController
+@RequestMapping("medicos")
+public class MedicoController {
+
+    @PostMapping
+    public void cadastrar(String json) {
+        System.out.println(json)
+    }
+
+}
+```
+
+Então usamos a `@RestController` para avisar pro Spring MVC que é uma controller, usamos o `@ResquestMapping("medicos")` para avisar pro Spring que a requisição mapeada é a de médicos, ou seja, o mesmo nome utilizado quando configuramos o `Insomnia` com a url `http://localhost:8080/medicos` com o nosso método Post, que também precisa ser mapeado com `@PostMapping` e agora precisamos também mapear o que recebemos do nosso Insomnia já que estamos recebendo uma String.
+
+Para isso usamos a anotação `@RequestBody String json`, então vamos mapear o corpo da requisição que estamos recebendo, dessa maneira podemos escrever todo o arquivo json que recebemos.
+
+``` Java
+@RestController
+@RequestMapping("medicos")
+public class MedicoController {
+
+    @PostMapping
+    public void cadastrar(@RequestBody String json) {
+        System.out.println(json)
+    }
+
+}
+```
+
+Mas desta maneira recebemos toda a `String` do json, o que fica ruim para nós, pois por exemplo, não podemos imprimir somente o `cep` ou o `nome` do medico cadastrado.
+
+Então agora vamos aprender uma maneira melhor para fazer isso.
+
+# DTO Com Java Record
+É um padrão usado em APIs para representar os dados que chegam na API e também os dados que devolvemos dela.
+
+Então uma forma de recebermos cada campo isoladamente, é não usar como parâmetro do método `cadastrar` e sim uma classe. Nesta classe, declaramos os atributos com os mesmos nomes que consta no JSON.
+
+Então vamos passar no método cadastrar a classe `DadosCadastroMedico`, porém irá dar erro. Então precisamos criar o `DadosCadastroMedico`.
+
+Então criamos o pacote `medico` e nele criamos não uma classe, mas sim um recurso `record` que foi implementado nas ultimas atualizações do java.
+
+## Criando record
+Então o record funciona como se fosse uma classe imutável para deixarmos o código simples, isso para não usarmos uma classe tradicional, pois seria necessário criar `Getters` e `Setters`, criar construtor, e todas as outras coisas do Java.
+
+Esse tipo de classe se encaixa perfeitamente para representar classes DTO, já que seu objetivo é apenas representar dados que serão recebidos ou devolvidos pela API, sem nenhum tipo de comportamento.
+
+Por baixo dos panos, o Java vai transformar esse Record em uma classe imutável
+
+O Spring já da suporte para o `record`.
+
+``` Java
+package med.voll.api.medico;
+
+public record DadosCadastroMedico(String nome, String email, String crm, Especialidade especialidade, DadosEndereco endereco) {
+
+}
+```
+
+Mas vamos perceber que irá dar erro, pois também não temos `Especialidade` que é um *enum* pois só tem quatro opções para selecionar e é fixo. E não existe esse *enum*.
+
+Então podemos passar o mouse em cima e criar o *enum* de Especialidade, e após criar atenção para realizar os imports.
+
+``` Java
+package med.voll.api.medico;
+
+public enum Especialidade {
+
+    ORTOPEDIA,
+    CARDIOLOGIA,
+    GINECOLOGIA,
+    DERMATOLOGIA;
+
+}
+```
+
+E também vamos perceber que o `DadosEndereco` irá dar um erro, pois tabém não existe, assim como `Especialidade`. Este será outro `record`.
+
+Ficará em outro pacote, o pacote `endereco`.
+
+``` Java
+package med.voll.api.endereco;
+
+public record DadosEndereco(String logradouro, String bairro, String cep, String uf, String numero, String complemento) {
+
+}
+```
+
+Com isso agora usando o Insomnia podemos receber cada parte do Json, e imprimir como quisermos, completo ou por partes.
+
+# Adicionando dependências
+Agora precisamos fazer a validação das informações e a persistência no banco de dados.
+
+Para fazermos isso é necessário adicionar novos módulos do Spring Boot, para isso vamos modificar a `pom.xml`.
+
+Para modificar a `pom.xml` podemos usar o site em que criamos o projeto Spring Boot, o https://start.spring.io/, nele vamos em `ADD DEPENDECIES` e procurar as dependências que queremos, e adicionar elas usando o botão control e clicando na dependência. Após adicionar todas as dependências, vamos no botão `EXPLORE` do site, onde podemos olhar a `pom.xml` que ele irá criar, com isso é só copiarmos as dependências que queremos e adicionarmos na nossa `pom.xml`.
+
+# Conexão com o banco de dados com Spring Boot
+Com as dependências adicionadas vamos fazer a configuração de acesso ao banco de dados com o Spring Boot.
+
+Para isso, na pasta:
+``` Folder
+src
+    main
+        resources
+            application.properties
+```
+
+Em `application.properties` vamos adicionar a coneção com o banco de dados.
+
+```properties
+spring.datasource.url=jdbc:postgresql://localhost/vollmed_api
+spring.datasource.username=postgres
+spring.datasource.password=postgres
+```
+
+Com isso, adicionamos a URL de conexão, o usuário e a senha.
+
+Importante que tenha a `DATABASE` criada, se não ele não irá se conectar, pois não cria a database automaticamente.
+
+# Entidades JPA
+Agora precisamos implementar a funcionalidade de cadastros de médicos.
+
+O que precisamos fazer, porém, é pegar o objeto e salvá-lo no banco de dados. O Spring Data JPA utiliza o JPA como ferramenta de mapeamento de objeto relacional. Por isso, criaremos uma entidade JPA para representar uma tabela no banco de dados.
+
+No caminho "src > java > medico" criaremos a classe `Medico`.
+
+``` Java
+package med.voll.api.medico;
+
+public class Medico {
+    private Long id;
+    private String nome;
+    private String email;
+    private String crm;
+    private Especialidade especialidade;
+    private Endereco endereco;
+}
+```
+
+Para isso também é necessário criar a classe `Endereco`, no pacote `med.voll.api.endereco`.
+
+``` Java
+package med.voll.api.endereco;
+
+public class Endereco {
+    private String logradouro;
+    private String bairro;
+    private String cep;
+    private String numero;
+    private String complemento;
+    private String cidade;
+    private String uf;
+}
+```
+
+Agora que tudo está mapeado corretamente, voltaremos a classe `Medico`, que ainda não possui nada JPA.
+
+Então vamos adicionar as anotações da JPA:
+`@Entity` - é utilizada para informar que a classe também é uma entidade. Assim a JPA estabelecerá a ligação entre a entidade e a tabela de mesmo nome, caso não seja do mesmo nome, usamos parênteses com o nome dentro: `@Entity(name = "medicos")`.
+
+`@Table` - é utilizada para especificar a tabela da entidade. Caso o nome da tabela não seja o mesmo da classe, é necessário usar o parênteses: `@Table(name = "medicos")`.
+
+`@Id` - é utilizada para especificar o identificador da entidade. Uma entidade deve sempre ter um atributo identificador, que é usado ao carregar a entidade em um determinado contexto de persistência.
+
+`@GeneratedValue` - especifica que o valor do identificador de entidade é gerado automaticamente usando uma coluna de identidade, uma sequência de banco de dados ou um gerador de tabelas. Com parênteses é necessário passar qual o tipo de gerador automático, no nosso caso que estamos usando o banco de dados postgre, é `IDENTITY` - `@GeneratedValue(strategy = GenerationType.IDENTITY)`.
+
+`@Enumerated` - é usada para especificar que um atributo de entidade representa um tipo enumerado. Usamos o parênteses para definir como será enumerado - `@Enumerated(EnumType.STRING)`.
+
+`@Embedded` - é usada para especificar que o idenficador de entidade é um tipo incorporável.
+```java
+package med.voll.api.medico;
+
+@Entity(name = "medicos")
+@Table(name = "medicos")
+public class Medico {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String nome;
+    private String email;
+    private String crm;
+
+    @Enumerated(EnumType.STRING)
+    private Especialidade especialidade;
+
+    @Embedded
+    private Endereco endereco;
+}
+```
+
+Agora vamos adicionar as anotações de uma biblioteca que estamos utilizando que é a `Lombok`, para gerar códigos Java que faltam automaticamente. Como Getters e Setters, contrutores e afins.
+
+# Lombok
+`@Getter` - Sobre “@ Getter” e “@ Setter” : São as anotações que fornecem os métodos getters e setters para atributos privados.
+
+`@NoArgsConstructor` - Fornece a criação de um construtor vazio.
+
+`@AllArgsConstructor` - Fornece a criação de um construtor com todos os atributos.
+
+`@EqualsAndHashCode` - Fornece os métodos equals() e hachCode(). É possível personalizar os atributos que serão validados.
+
+`@Embeddable` - é usada para especificar tipos incorporáveis. Como os tipos básicos, os tipos incorporáveis não tem identidade, sendo gerenciados por sua entidade proprietária.
+<br>
+<br>
+
+``` java
+package med.voll.api.medico;
+
+@Entity(name = "medicos")
+@Table(name = "medicos")
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(of = "id")
+public class Medico {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String nome;
+    private String email;
+    private String crm;
+
+    @Enumerated(EnumType.STRING)
+    private Especialidade especialidade;
+
+    @Embedded
+    private Endereco endereco;
+}
+```
+
+Agora vamos fazer a mesma coisa para a classe Endereco:
+
+```java
+package med.voll.api.endereco;
+
+@Embeddable
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+public class Endereco {
+
+    private String logradouro;
+    private String bairro;
+    private String cep;
+    private String numero;
+    private String complemento;
+    private String cidade;
+    private String uf;
+}
+```
+
+Com isso realizamos o mapeamento da JPA.
+
+# Persistência com o Spring Data - Intefaces Repository
+Para fazer a persistência, pegar o `Médico` e salvar no banco de dados, o Spring Data tem o `Respository`, que são intefaces. O Spring já fornece a implementação.
+
+Vamos criar uma nova inteface no pacote medico, a inteface vai se chamar `MedicoRepository`.
+
+Criaremos uma interface Java, sem elementos do Spring Data. Vamos herdar de uma interface chamada `JpaRepository`, usando um `extends`. Entre `<>`, passaremos dois tipos de objetos.
+
+O primeiro será o tipo da entidade traballhada pelo *repository*, `Medico`, e o tipo do atributo da chave primária da entidade, Long.
+
+``` Java
+public interface MedicoRepository extends JpaRepository<Medico, Long> {
+}
+```
+
+* `JpaRepository` - JpaRepository<`tipo da entidade`, `tipo do atributo da chave primária da entidade`>
+
+Agora já podemos usar o `repository` no controller. Apagamos o print e vamos declarar o `repository`como um atributo da classe `MedicoController`.
+
+Criamos o atributo `private MedicoRepository repository`. Precisamos avisar ao Spring que esse novo atributo pelo irá ser gerenciado por ele, e não por nós. Faremos a injeção de dependências inserindo a anotação `@Autowired` acima do atributo.
+
+No método cadastrar agora, vamos inserir o método que fará o insert na tabela do banco de dados: `repository.save(new Medico(dados));`.
+
+``` Java
+@RestController
+@RequestMapping("medicos")
+public class MedicoController {
+
+    @Autowired
+    private MedicoRepository repository;
+    
+    @PostMapping
+    public void cadastrar(@RequestBody DadosCadastroMedico dados) {
+        repository.save(new Medico(dados));
+    }
+
+}
+```
+
+Agora que passamos esse `new Medico(dados)` precisamos criar esse contrutor em `Medico`.
+
+Class `Medico`:
+``` Java
+public Medico(DadosCadastroMedico dados) {
+    this.nome = dados.nome();
+    this.email = dados.email();
+    this.crm = dados.crm();
+    this.especialidade = dados.especialidade();
+    this.endereco = new Endereco(dados.endereco());
+}
+```
+Criaremos o contrutor que recebe o objeto `dados.endereco` na classe Endereco;
+
+Class `Endereco`:
+``` Java
+public Endereco(DadosEndereco dados) {
+    this.logradouro = dados.logradouro();
+    this.bairro = dados.bairro();
+    this.cep = dados.cep();
+    this.uf = dados.cidade();
+    this.cidade = dados.cidade();
+    this.numero = dados.numero();
+    this.complemento = dados.complemento();
+}
+```
+
+Vamos ver mais pra frente como resolver o erro da tabela que não existe no banco de dados.
+
+
+# Explicando o Padrão DAO
+O padrão de projeto DAO, conhecido também por Data Access Object, é utilizado para persistência de dados, onde seu principal objetivo é separar regras de negócio de regras de acesso a banco de dados. Nas classes que seguem esse padrão, isolamos todos os códigos que lidam com conexões, comandos SQLs e funções diretas ao banco de dados, para que assim tais códigos não se espalhem por outros pontos da aplicação, algo que dificultaria a manutenção do código e também a troca das tecnologias e do mecanismo de persistência.
+
+# Explicando o Padrão Repository - Que estamos utilizando
+Um repositório também lida com dados e oculta consultas semelhantes ao DAO. No entanto, ele fica em um nível mais alto, mais próximo da lógica de negócios de uma aplicação. Um repositório está vinculado à regra de negócio da aplicação e está associado ao agregado dos seus objetos de negócio, retornando-os quando preciso.
+
+Só que devemos ficar atentos, pois assim como no padrão DAO, regras de negócio que estão envolvidas com processamento de informações não devem estar presentes nos repositórios. Os repositórios não devem ter a responsabilidade de tomar decisões, aplicar algoritmos de transformação de dados ou prover serviços diretamente a outras camadas ou módulos da aplicação. Mapear entidades de domínio e prover as funcionalidades da aplicação são responsabilidades muito distintas.
+
+Um repositório fica entre as regras de negócio e a camada de persistência:
+
+- Ele provê uma interface para as regras de negócio onde os objetos são acessados como em uma coleção;
+- Ele usa a camada de persistência para gravar e recuperar os dados necessários para persistir e recuperar os objetos de negócio.
+
+Portanto, é possível até utilizar um ou mais DAOs em um repositório.
+
+# Por que o padrão repository ao invés do DAO utilizando Spring?
+O padrão de repositório incentiva um design orientado a domínio, fornecendo uma compreensão mais fácil do domínio e da estrutura de dados. Além disso, utilizando o repository do Spring não temos que nos preocupar em utilizar diretamente a API da JPA, bastando apenas criar os métodos que o Spring cria a implementação em tempo de execução, deixando o código muito mais simples, menor e legível.
+
+# Ferramentas de Migração
+Agora vamos fazer com que a tabela, seja encontrada pelo banco de dados.
+
+Já temos a dependênci do FlyWay neste projeto, uma das ferramentas suportadas pelo Spring Boot.
+
+Então vamos utilizar o `flyway` para fazer o controle e modificação de tabelas no banco de dados.
+
+Para cada mudança que quisermos executar no banco de dados, precisamos criar um arquivo `.sql` no projeto e, nele escrever o trecho do comando SQL que será executado no banco de dados.
+
+Precisamos salvá-los em um diretório específico. Criaremos essa nova pasta em "main > resources" e criar uma pasta com o nome `db/migration`, ele já irá enteder que a `/` indica que migration é uma subpasta.
+
+Dentro da pasta, criaremos um arquivo SQL que servirá como nossa primeira migration, responsável por criar a tabela de médicos. Além disso, **é preciso interromper o projeto antes de usar migration**.
+
+Vamos criar na pasta "db > migration" uma migration, o nome da migration será `V1__create-table-medicos.sql`.
+
+```
+Obs: Esse tipo de arquivo sempre começará com "V", seguido pelo número que repersenta a ordem de criação dos arquivos e, depois de dois underlines, um nome descritivo.
+```
+
+Abrindo o arquivo, vamos digitar o comando SQL.
+
+``` SQL
+CREATE TABLE medicos(
+    id SERIAL NOT NULL,
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    crm VARCHAR(6) NOT NULL UNIQUE,
+    especialidade VARCHAR(100) NOT NULL,
+    logradouro VARCHAR(100) NOT NULL,
+    bairro VARCHAR(100) NOT NULL,
+    cep VARCHAR(9) NOT NULL,
+    complemento VARCHAR(100),
+    numero VARCHAR(20),
+    uf VARCHAR(25) NOT NULL,
+    cidade VARCHAR(100) NOT NULL,
+    PRIMARY KEY (id)
+);
+```
+
+Após digitarmos no arquivo, podemos reiniciar a aplicação e usando o Insomnia, podemos dar `Send` para tentar commitar os dados recebidos por Json. Iremos ver que conseguimos fazer o `INSERT` no banco de dados.
+
