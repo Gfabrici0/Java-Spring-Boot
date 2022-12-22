@@ -45,7 +45,7 @@ public class Medico {
 
     @Embedded
     private Endereco endereco;
-
+    
     private Boolean ativo;
 
     public void atualizarInformacoes(DadosAtualizacaoMedico dados) {

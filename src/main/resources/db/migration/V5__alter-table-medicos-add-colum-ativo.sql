@@ -1,2 +1,2 @@
-alter table medicos add ativo smallint;
-update medicos set ativo = 1;
+alter table medicos add ativo boolean;
+update medicos set ativo = true;
